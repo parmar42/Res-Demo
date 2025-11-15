@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WhatsApp Bot – Full Premium Order + Payment Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body { background:#dfe7ee; font-family:Arial; display:flex; justify-content:center; padding:40px; }
+.phone {
+  width:360px; height:720px; background:#111;
+  border-radius:40px; padding:18px;
+  box-shadow:0 0 28px rgba(0,0,0,0.45);
+}
+.screen {
+  background:#fff; width:100%; height:100%;
+  border-radius:26px; overflow-y:auto;
+  padding:20px; box-sizing:border-box;
+  display:flex; flex-direction:column;
+}
+.msg {
+  max-width:80%; padding:12px 15px;
+  border-radius:14px; margin-bottom:12px;
+  line-height:1.4; font-size:15px;
+}
+.bot { background:#e1ffc7; }
+.user { background:#d9f1ff; margin-left:auto; }
+.buttons { margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+.btn {
+  padding:10px 15px; background:#25d366;
+  color:#fff; border-radius:20px;
+  font-size:14px; cursor:pointer; text-align:center;
+}
+.btn:hover { opacity:0.85; }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen" id="screen">
+    <div class="msg bot">
+      Welcome to <b>Island Eats</b> 🌴🍽️<br>
+      Tap below to start your premium ordering experience.
+    </div>
+    <div class="buttons">
+      <div class="btn" onclick="startOrder()">Start Order</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let order = { item:null, quantity:1, total:0 };
+
+function addBot(html){
+  const s=document.getElementById("screen");
+  let b=document.createElement("div");
+  b.className="msg bot";
+  b.innerHTML=html;
+  s.appendChild(b); s.scrollTop=s.scrollHeight;
+}
+function addUser(text){
+  const s=document.getElementById("screen");
+  let u=document.createElement("div");
+  u.className="msg user";
+  u.innerText=text;
+  s.appendChild(u); s.scrollTop=s.scrollHeight;
+}
+
+function startOrder(){
+  addUser("Start Order");
+  addBot("Here's our premium Barbados menu 🇧🇧:<br><br>1️⃣ Flying Fish Cutter – <b>$18</b><br>2️⃣ Bajan Mac Pie – <b>$14</b><br>3️⃣ Grilled Mahi-Mahi – <b>$32</b><br><br>Select an item:");
+  showMenuButtons();
+}
+
+function showMenuButtons(){
+  const s=document.getElementById("screen");
+  let box=document.createElement("div");
+  box.className="buttons";
+  box.innerHTML=`
+    <div class='btn' onclick='selectItem(1,18,"Flying Fish Cutter")'>1 – Flying Fish Cutter</div>
+    <div class='btn' onclick='selectItem(2,14,"Bajan Mac Pie")'>2 – Bajan Mac Pie</div>
+    <div class='btn' onclick='selectItem(3,32,"Grilled Mahi-Mahi")'>3 – Grilled Mahi-Mahi</div>
+  `;
+  s.appendChild(box);
+}
+
+function selectItem(num, price, name){
+  addUser(num.toString());
+  order.item=name;
+  order.price=price;
+  addBot("How many would you like?");
+  showQtyButtons();
+}
+
+function showQtyButtons(){
+  const s=document.getElementById("screen");
+  let box=document.createElement("div");
+  box.className="buttons";
+  let html="";
+  for(let i=1;i<=5;i++){
+    html+=`<div class='btn' onclick='selectQty(${i})'>${i}</div>`;
+  }
+  box.innerHTML=html;
+  s.appendChild(box);
+}
+
+function selectQty(q){
+  addUser(q.toString());
+  order.quantity=q;
+  order.total=order.price*q;
+  addBot(`You ordered:<br><b>${order.quantity} × ${order.item}</b><br>Total: <b>$${order.total}</b><br><br>Confirm order?`);
+  showConfirmButtons();
+}
+
+function showConfirmButtons(){
+  const s=document.getElementById("screen");
+  let box=document.createElement("div");
+  box.className="buttons";
+  box.innerHTML=`
+    <div class='btn' onclick='confirmOrder()'>Yes, confirm</div>
+    <div class='btn' onclick='cancelOrder()'>Cancel</div>
+  `;
+  s.appendChild(box);
+}
+
+function confirmOrder(){
+  addUser("Confirm");
+  addBot("Great! How would you like to pay?");
+  showPaymentButtons();
+}
+
+function cancelOrder(){
+  addUser("Cancel");
+  addBot("Your order has been canceled.");
+}
+
+function showPaymentButtons(){
+  const s=document.getElementById("screen");
+  let box=document.createElement("div");
+  box.className="buttons";
+  box.innerHTML=`
+    <div class='btn' onclick='paymentMethod("Wipay")'>Wipay</div>
+    <div class='btn' onclick='paymentMethod("Credit Card")'>Credit Card</div>
+    <div class='btn' onclick='paymentMethod("Cash on Delivery")'>Cash on Delivery</div>
+  `;
+  s.appendChild(box);
+}
+
+function paymentMethod(method){
+  addUser(method);
+  if(method==="Cash on Delivery"){
+    addBot("Order confirmed! Your delivery arrives in <b>18 minutes</b> 🚗💨");
+  } else {
+    addBot(`Redirecting to secure <b>${method}</b> payment gateway…<br><br><i>(Simulation)</i>`);
+    showFakePaymentCompletion();
+  }
+}
+
+function showFakePaymentCompletion(){
+  addBot("<b>Payment Successful ✔</b><br>Your food is on the way!");
+}
+</script>
+
+</body>
+</html>
