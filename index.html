@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Island Eats — WhatsApp Ultra-Real Chat Simulation</title>
+<style>
+:root{
+  --bg:#e9f0ee;
+  --chat-bg:#ffffff;
+  --bot:#e6ffdb;
+  --user:#d9f1ff;
+  --accent:#25D366;
+  --muted:#7a8a86;
+  --phone-width:420px;
+}
+*{box-sizing:border-box}
+body{font-family:Inter, Arial, sans-serif; background:var(--bg); margin:0; padding:28px; display:flex; justify-content:center;}
+.wrapper{width:var(--phone-width); max-width:96%;}
+/* phone frame */
+.phone{background:#0b0b0b;border-radius:30px;padding:14px;box-shadow:0 20px 50px rgba(10,20,30,0.25);position:relative;}
+.notch{height:28px;width:160px;background:#050505;border-radius:16px;margin:0 auto 8px auto;}
+.screen{background:var(--chat-bg);width:100%;height:760px;border-radius:20px;overflow:hidden;display:flex;flex-direction:column;}
+.header{background:linear-gradient(180deg,#0b7a4a,#06603a);color:white;padding:12px 16px;display:flex;align-items:center;gap:12px;}
+.header img{width:42px;height:42px;border-radius:8px;object-fit:cover;}
+.header .title{font-weight:700;font-size:16px;}
+.chat-area{flex:1;padding:14px;overflow:auto;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#f7fbf8,#eef6f0);}
+.msg{max-width:78%;padding:10px 12px;border-radius:12px;line-height:1.3;font-size:14px;box-shadow:0 1px 0 rgba(0,0,0,0.03);}
+.bot{background:var(--bot);align-self:flex-start;border-bottom-left-radius:4px;}
+.user{background:var(--user);align-self:flex-end;border-bottom-right-radius:4px;}
+.thumbnail{display:flex;gap:8px;align-items:center;}
+.thumb-img{width:72px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+.choice-row{display:flex;gap:8px;margin-top:8px;}
+.choice{background:white;border:1px solid #e6efe9;padding:8px 10px;border-radius:18px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.06);font-weight:600;}
+.choice.small{padding:6px 8px;font-size:13px;}
+.typing{display:flex;gap:6px;align-items:center;padding:6px 10px;border-radius:12px;background:transparent;}
+.typing .dot{width:8px;height:8px;background:#9fdc9a;border-radius:50%;opacity:0.7;animation:blink 1.2s infinite;}
+@keyframes blink{0%{opacity:0.2}50%{opacity:1}100%{opacity:0.2}}
+.footer{padding:10px 14px;border-top:1px solid #eef6f0;display:flex;gap:8px;align-items:center;background:linear-gradient(180deg,#fbfff9,#f1fbf3);}
+.input{flex:1;background:#f6fff5;padding:10px 12px;border-radius:20px;border:1px solid #e8f3ea;font-size:14px;color:#033;outline:none}
+.send{background:var(--accent);border:none;color:white;padding:10px 14px;border-radius:18px;cursor:pointer;font-weight:700}
+.action-btn{background:#fff;padding:8px;border-radius:999px;border:1px solid #e6efe9;cursor:pointer}
+.small-voice{display:flex;gap:6px;align-items:center;padding:8px;background:#fff;border-radius:12px;border:1px solid #e6efe9;cursor:pointer}
+.kit{font-size:12px;color:var(--muted);padding:8px}
+.order-chip{display:inline-block;background:#fff;border-radius:14px;padding:8px 10px;border:1px solid #e6efe9;font-weight:700;}
+
+/* responsive */
+@media(max-width:420px){
+  .wrapper{padding:8px}
+  .screen{height:680px}
+}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="phone" role="application" aria-label="Phone demo">
+    <div class="notch"></div>
+    <div class="screen">
+      <div class="header">
+        <img src="https://images.unsplash.com/photo-1542444459-db1d6f54f2aa?auto=format&fit=crop&w=160&q=60" alt="logo">
+        <div>
+          <div class="title">Island Eats</div>
+          <div style="font-size:12px;opacity:0.9">WhatsApp-style demo</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-weight:700">Open</div>
+          <div style="font-size:12px;opacity:0.9">Online • Demo</div>
+        </div>
+      </div>
+
+      <div class="chat-area" id="chatArea" aria-live="polite"></div>
+
+      <div class="footer">
+        <button class="action-btn" id="voiceBtn" title="Send voice note">
+          🎤
+        </button>
+        <input id="userInput" class="input" placeholder="Type message or pick a quick reply..." />
+        <button class="send" id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Demo flow data ---
+const flow = [
+  { type:'bot', delay:700, content: "👋 Hi! Welcome to Island Eats. Fancy something local or a chef special tonight?" ,
+    choices: [
+      {id:'menu', label:'Show menu'},
+      {id:'special', label:'Chef Special'},
+      {id:'delivery', label:'Delivery options'}
+    ]
+  },
+  { type:'bot', delay:1200, content: "Here are 3 popular dishes — tap a photo to add to cart." ,
+    gallery: [
+      {id:1, name:'Grilled Caribbean Chicken', price:22, img:'https://images.unsplash.com/photo-1606755962773-0c3f3c34d1d3?auto=format&fit=crop&w=800&q=60'},
+      {id:2, name:'Bajan Fried Fish', price:28, img:'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=800&q=60'},
+      {id:3, name:'Macaroni Pie', price:12, img:'https://images.unsplash.com/photo-1604908177522-63e91f4f0d17?auto=format&fit=crop&w=800&q=60'}
+    ]
+  },
+  { type:'bot', delay:900, content: "Would you like delivery or pickup?",
+    choices:[
+      {id:'pickup', label:'Pickup'},
+      {id:'delivery', label:'Delivery'}
+    ]
+  }
+];
+
+// --- Utilities ---
+const chatArea = document.getElementById('chatArea');
+let cart = [];
+
+// append message helpers
+function appendBot(html){
+  const el = document.createElement('div');
+  el.className='msg bot';
+  el.innerHTML = html;
+  chatArea.appendChild(el);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function appendUser(text){
+  const el = document.createElement('div');
+  el.className='msg user';
+  el.textContent = text;
+  chatArea.appendChild(el);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+function showTyping(duration=900){
+  const wrap = document.createElement('div');
+  wrap.className='typing';
+  wrap.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  chatArea.appendChild(wrap);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  return new Promise(resolve => setTimeout(()=>{ wrap.remove(); resolve(); }, duration));
+}
+
+// render gallery block
+function renderGallery(items){
+  const container = document.createElement('div');
+  container.className='msg bot';
+  const inner = document.createElement('div');
+  inner.innerHTML = '<div style="font-weight:700;margin-bottom:8px">Popular right now</div>';
+  items.forEach(it=>{
+    const row = document.createElement('div');
+    row.className = 'thumbnail';
+    row.style.marginBottom = '8px';
+    row.innerHTML = `
+      <img class="thumb-img" src="${it.img}" alt="${it.name}" />
+      <div style="flex:1">
+        <div style="font-weight:700">${it.name}</div>
+        <div style="color:var(--muted);font-size:13px">$${it.price}</div>
+        <div class="choice-row">
+          <div class="choice small" onclick="addToCart(${it.id},'${escape(it.name)}',${it.price})">Add</div>
+          <div class="choice small" onclick="viewItem(${it.id})">View</div>
+        </div>
+      </div>
+    `;
+    inner.appendChild(row);
+  });
+  container.appendChild(inner);
+  chatArea.appendChild(container);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// flow runner
+async function runFlow(){
+  for(const step of flow){
+    await showTyping(step.delay);
+    if(step.content) appendBot(step.content);
+    if(step.choices){
+      const cwrap = document.createElement('div');
+      cwrap.className='msg bot';
+      const row = document.createElement('div');
+      row.className='choice-row';
+      step.choices.forEach(ch=>{
+        const b = document.createElement('div');
+        b.className='choice';
+        b.textContent = ch.label;
+        b.onclick = ()=> handleChoice(ch.id);
+        row.appendChild(b);
+      });
+      cwrap.appendChild(row);
+      chatArea.appendChild(cwrap);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+    if(step.gallery){
+      renderGallery(step.gallery);
+    }
+  }
+}
+
+// initial run
+runFlow();
+
+// interactions
+function handleChoice(id){
+  appendUser(id);
+  if(id==='menu' || id==='special'){
+    // show gallery again or menu
+    showTyping(800).then(()=> {
+      appendBot('Opening menu...');
+      renderGallery(flow[1].gallery);
+    });
+  } else if(id==='delivery'){
+    showTyping(700).then(()=>{
+      appendBot('Delivery available island-wide. Estimate: 25-40 mins.');
+      renderChoices([{id:'confirm_delivery',label:'Confirm Delivery'},{id:'pickup',label:'Pickup instead'}]);
+    });
+  } else if(id==='pickup' || id==='confirm_delivery'){
+    showTyping(700).then(()=> appendBot('Great — we will need your name and pickup time. Reply with your name.'));
+  }
+}
+
+function renderChoices(choices){
+  const cwrap = document.createElement('div');
+  cwrap.className='msg bot';
+  const row = document.createElement('div');
+  row.className='choice-row';
+  choices.forEach(ch=>{
+    const b = document.createElement('div');
+    b.className='choice';
+    b.textContent = ch.label;
+    b.onclick = ()=> handleChoice(ch.id);
+    row.appendChild(b);
+  });
+  cwrap.appendChild(row);
+  chatArea.appendChild(cwrap);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// add to cart
+function addToCart(id, name, price){
+  name = unescape(name);
+  appendUser('Add ' + name);
+  cart.push({id,name,price});
+  appendBot(`${name} added to your order. Order (${cart.length}) • <span class="order-chip">$${cart.reduce((s,i)=>s+i.price,0)}</span>`);
+  // show quick checkout chip
+  const chip = document.createElement('div');
+  chip.className='msg bot';
+  chip.innerHTML = `<div class="choice-row"><div class="choice" onclick="checkout()">Checkout</div><div class="choice" onclick="viewCart()">View cart</div></div>`;
+  chatArea.appendChild(chip);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// view item
+function viewItem(id){
+  const item = flow[1].gallery.find(x=>x.id===id);
+  appendUser('View ' + item.name);
+  showTyping(500).then(()=> {
+    appendBot(`<div style="font-weight:700">${item.name}</div><div style="margin-top:6px;color:var(--muted)">$${item.price} • Bajan special</div><div style="margin-top:8px"><img src="${item.img}" style="width:100%;border-radius:8px" /></div>`);
+    const c = document.createElement('div'); c.className='msg bot';
+    c.innerHTML = `<div class="choice-row"><div class="choice" onclick="addToCart(${item.id},'${escape(item.name)}',${item.price})">Add</div><div class="choice" onclick="checkout()">Checkout</div></div>`;
+    chatArea.appendChild(c);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  });
+}
+
+// view cart
+function viewCart(){
+  appendUser('View cart');
+  showTyping(400).then(()=> {
+    let html = '<div style="font-weight:700">Your order</div>';
+    cart.forEach((it,i)=> html += `<div style="margin-top:8px">${i+1}. ${it.name} — $${it.price}</div>`);
+    html += `<div style="margin-top:8px;font-weight:700">Total: $${cart.reduce((s,i)=>s+i.price,0)}</div>`;
+    appendBot(html);
+    const c = document.createElement('div'); c.className='msg bot';
+    c.innerHTML = `<div class="choice-row"><div class="choice" onclick="checkout()">Checkout</div><div class="choice" onclick="clearCart()">Clear</div></div>`;
+    chatArea.appendChild(c);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  });
+}
+
+// checkout simulation
+function checkout(){
+  appendUser('Checkout');
+  showTyping(800).then(()=> {
+    appendBot('Which payment method?');
+    const c = document.createElement('div'); c.className='msg bot';
+    c.innerHTML = `<div class="choice-row"><div class="choice" onclick="simulatePayment('WiPay')">WiPay</div><div class="choice" onclick="simulatePayment('Card')">Card</div><div class="choice" onclick="simulatePayment('Cash')">Cash</div></div>`;
+    chatArea.appendChild(c);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  });
+}
+
+function simulatePayment(method){
+  appendUser(method);
+  showTyping(1000).then(()=> {
+    appendBot(method + ' processing…');
+    setTimeout(()=> {
+      appendBot('Payment successful ✔ — your order is confirmed. Sending to kitchen...');
+      animatePrinter();
+      cart = [];
+    },1200);
+  });
+}
+
+function clearCart(){ cart = []; appendBot('Cart cleared'); }
+
+// fake kitchen printing animation
+function animatePrinter(){
+  const el = document.createElement('div'); el.className='msg bot';
+  el.innerHTML = '<div style="font-family:monospace;background:#111;color:#fff;padding:12px;border-radius:8px">Printing...\n\n</div>';
+  chatArea.appendChild(el);
+  chatArea.scrollTop = chatArea.scrollHeight;
+  setTimeout(()=> {
+    el.innerHTML = '<div style="font-family:monospace;background:#111;color:#fff;padding:12px;border-radius:8px">ORDER #'+Math.floor(Math.random()*9000+1000)+'\n----------------\n'+cart.map((i,idx)=> (idx+1)+'. '+i.name+' x1').join('\n')+'\n\nPrinted: '+new Date().toLocaleString()+'</div>';
+    chatArea.scrollTop = chatArea.scrollHeight;
+  },1400);
+}
+
+// typing & send input
+const sendBtn = document.getElementById('sendBtn');
+const userInput = document.getElementById('userInput');
+sendBtn.onclick = ()=> {
+  const v = userInput.value.trim();
+  if(!v) return;
+  appendUser(v);
+  userInput.value = '';
+  // simple intent handling
+  if(/menu|show|dishes|food/i.test(v)) {
+    showTyping(700).then(()=> { appendBot('Opening menu...'); renderGallery(flow[1].gallery); });
+  } else if(/cart|view cart|checkout/i.test(v)){
+    viewCart();
+  } else if(/add\s+(\d+)\s+(.+)/i.test(v)){
+    const m = v.match(/add\s+(\d+)\s+(.+)/i);
+    const qty = parseInt(m[1]), name = m[2];
+    for(let i=0;i<qty;i++) cart.push({id:0,name,price:0});
+    showTyping(600).then(()=> appendBot(`${qty} × ${name} added to order`));
+  } else {
+    showTyping(800).then(()=> appendBot('Sorry — this demo understands quick replies. Try "show menu" or tap a photo.'));
+  }
+}
+
+// voice note mock
+const voiceBtn = document.getElementById('voiceBtn');
+voiceBtn.onclick = ()=> {
+  appendUser('🎤 voice note (simulated)');
+  showTyping(1000).then(()=> appendBot('Heard you! Did you want delivery or pickup? <div style="margin-top:8px"><div class="choice-row"><div class="choice" onclick="handleChoice(\'delivery\')">Delivery</div><div class="choice" onclick="handleChoice(\'pickup\')">Pickup</div></div></div>'));
+}
+
+</script>
+</body>
+</html>
